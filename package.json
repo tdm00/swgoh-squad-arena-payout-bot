@@ -1,6 +1,6 @@
 {
-  "name": "shard-payout",
-  "version": "1.0.0",
+  "name": "swgoh-squad-arena-payout-bot",
+  "version": "1.0.1",
   "description": "",
   "main": "./lib",
   "scripts": {
@@ -18,13 +18,13 @@
   },
   "homepage": "https://github.com/Tarnadas/shard-payout#readme",
   "dependencies": {
-    "discord.js": "^11.1.0",
-    "uws": "^8.14.1",
-    "xlsx": "^0.11.1"
+    "discord.js": "^11.3.2",
+    "uws": "^10.148.1",
+    "xlsx": "^0.13.2"
   },
   "devDependencies": {
-    "babel-cli": "^6.24.1",
-    "babel-core": "^6.25.0",
-    "babel-preset-env": "^1.6.0"
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-preset-env": "^1.7.0"
   }
 }
