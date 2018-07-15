@@ -7,11 +7,15 @@ A Discord bot which parses an xlsx document to write payouts in a Discord channe
 - install Node >= 8
 - git clone the repository
 - run `npm install` in its folder
-- visit www.discordapp.com/developers/applications/me and make a new application. Convert it to a bot
+- visit https://www.discordapp.com/developers/applications/me and make a new application. Convert it to a bot
 - make a file `src/secret.js` with `export const botToken = 'Your bot token here'`
 - add the bot to your Discord server
 - make a dedicated channel for the payouts and give the bot full access to it
-- get the channel ID for the payout channel (enable dev options in Discord, right-click the channel and copy ID)
+- get the channel ID for the payout channel
+  - User Settings
+  - Appearance
+  - Enable Developer Mode
+   (enable dev options in Discord, right-click the channel and copy ID)
 - go to `src/Bot.js` and change the value for `channelId` to the channel ID you just copied
 - make your changes to the xlsx file. Do not change its layout or column names
 - run `npm start`
