@@ -3,17 +3,16 @@ import XLSX from 'xlsx'
 
 import path from 'path'
 
-const channelId = '345179574033842177'
+const channelId = '463542394663731200'
 
 export default class Bot {
   constructor (botToken) {
     this.main = this.main.bind(this)
 
     this.botToken = botToken
-
     this.client = new Discord.Client()
     this.client.on("ready", async () => {
-      this.client.user.setGame('live countdowns until payout')
+      // this.client.user.setActivity('live countdowns until payout')
       this.channel = this.client.channels.get(channelId)
 
       await this.initializeBot()
@@ -109,7 +108,8 @@ export default class Bot {
 
   async sendMessage () {
     let embed = new Discord.RichEmbed().setColor(0x00AE86)
-    let desc = '**Time until next payout**:'
+    let desc = 'Flags or smiles are friendly and angry face is enemy. If your flag is incorrect tag @tm. The bot could stall so if the time until payout does not look like it is updating, off by 15 minutes or more, tag @tm\r\n\r\n'
+    desc += '**Time until next payout**:'
     for (let i in this.mates) {
       let fieldName = String(this.mates[i].time)
       let fieldText = ''
