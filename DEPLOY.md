@@ -1,7 +1,7 @@
 # Deploy the application
-now deploy --docker --public --no-verify --dotenv=.env --force
+now deploy --docker --public --dotenv=.env --force
 
-export NOW_URL=https://swgoh-squad-arena-payout-bot-oxrekthuyu.now.sh
+export NOW_URL=https://
 
 # Scale application to a single instance
 now scale $NOW_URL sfo1 0 1
