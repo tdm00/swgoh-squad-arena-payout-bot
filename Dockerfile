@@ -1,5 +1,5 @@
 # Start for latest Node on Alpine Linux
-FROM node:10.6.0-alpine
+FROM node:10.8.0-alpine
 
 # Create directory to hold the app
 WORKDIR /var/swgoh-squad-arena-payout-bot
@@ -11,7 +11,7 @@ WORKDIR /var/swgoh-squad-arena-payout-bot
 COPY . .
 
 # Install app dependencies for production
-RUN npm install
+RUN npm install --no-optional --no-shrinkwrap --no-package-lock
 
 # Required for deployment to now.sh, but doesn't do anything
 EXPOSE 3000
