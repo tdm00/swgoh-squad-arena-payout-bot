@@ -19,8 +19,8 @@
   "homepage": "https://github.com/Tarnadas/shard-payout#readme",
   "dependencies": {
     "bufferutil": "^4.0.0",
-    "discord.js": "^11.3.2",
-    "xlsx": "^0.13.3"
+    "discord.js": "^11.4.2",
+    "xlsx": "^0.13.5"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
