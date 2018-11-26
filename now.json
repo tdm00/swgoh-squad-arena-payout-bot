@@ -1,6 +1,7 @@
 {
     "name": "swgoh-squad-arena-payout-bot",
     "type": "docker",
+    "version": 1,
     "scale": {
         "sfo1": {
             "min": 1,
