@@ -1,5 +1,5 @@
 # Deploy the application
-now deploy --docker --public --dotenv=.env --force
+now rm swgoh-squad-arena-payout-bot -y; now deploy --docker --public --dotenv=.env --force
 
 export NOW_URL=https://
 
