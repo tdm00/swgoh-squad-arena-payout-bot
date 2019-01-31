@@ -1,5 +1,5 @@
 # Start for latest Node on Alpine Linux
-FROM node:8-alpine
+FROM node:lts-alpine
 
 # Create directory to hold the app
 WORKDIR /var/swgoh-squad-arena-payout-bot
