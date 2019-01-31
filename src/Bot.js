@@ -116,7 +116,7 @@ export default class Bot {
       for (const mate of this.mates[i].mates) {
         fieldText += `${mate.flag} [${mate.name}](${mate.swgoh})\n` // Discord automatically trims messages
       }
-      embed.addField(fieldName, fieldText, true)
+      embed.addField(fieldName, fieldText, false)
     }
     embed.setDescription(desc)
     await this.message.edit({embed})
