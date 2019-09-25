@@ -1,11 +1,10 @@
-import Discord from 'discord.js'
-import XLSX from 'xlsx'
+const Discord = require("discord.js")
+const XLSX = require("xlsx")
 
-import path from 'path'
+const path = require("path")
+require("./global")
 
-const channelId = '463542394663731200'
-
-export default class Bot {
+module.exports = class Bot {
   constructor (botToken) {
     this.main = this.main.bind(this)
 
@@ -13,7 +12,7 @@ export default class Bot {
     this.client = new Discord.Client()
     this.client.on("ready", async () => {
       // this.client.user.setActivity('live countdowns until payout')
-      this.channel = this.client.channels.get(channelId)
+      this.channel = this.client.channels.get(global.channelId)
 
       await this.initializeBot()
       console.log('Bot initialized')
@@ -108,15 +107,16 @@ export default class Bot {
 
   async sendMessage () {
     let embed = new Discord.RichEmbed().setColor(0x00AE86)
-    let desc = 'Flags or smiles are friendly and angry face is enemy. If your flag is incorrect tag @tm. The bot could stall so if the time until payout does not look like it is updating, off by 15 minutes or more, tag @tm\r\n\r\n'
-    desc += '**Time until next payout**:'
+	let desc = global.embedHeaderText
+    desc += '\r\n\r\n**Time until next payout**:'
     for (let i in this.mates) {
       let fieldName = String(this.mates[i].time)
       let fieldText = ''
       for (const mate of this.mates[i].mates) {
         fieldText += `${mate.flag} [${mate.name}](${mate.swgoh})\n` // Discord automatically trims messages
       }
-      embed.addField(fieldName, fieldText, false)
+      embed.addField(fieldName, fieldText, true) // true: inline mode
+           .setTimestamp()
     }
     embed.setDescription(desc)
     await this.message.edit({embed})

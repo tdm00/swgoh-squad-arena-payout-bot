@@ -1,6 +1,6 @@
-import Bot from './Bot'
-import { botToken } from './secret'
-new Bot(botToken)
+const Bot = require("./Bot")
+require("./global")
+new Bot(global.botToken)
 
 // require('http').createServer().listen(3000)
 const http = require('http');
