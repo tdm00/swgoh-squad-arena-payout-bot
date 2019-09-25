@@ -17,11 +17,16 @@ module.exports = class Bot {
       await this.initializeBot()
       console.log('Bot initialized')
     })
+	
+	client.on('message', msg => {
+	  if (msg.content === '!reloadxlsx' && msg.member != null && msg.member.hasPermission('ADMINISTRATOR')) {
+		this.reloadXlsx()
+	  }
+	});
 
     this.client.login(botToken)
-
-    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(path.resolve(__dirname, '../SWGoH_Shard.xlsx')).Sheets.Sheet1)
-    this.parseXlsx()
+	
+    this.reloadXlsx()
 
     this.main()
   }
@@ -56,7 +61,12 @@ module.exports = class Bot {
       }
     }
   }
-
+  
+  reloadXlsx() {
+    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(path.resolve(__dirname, '../SWGoH_Shard.xlsx')).Sheets.Sheet1)
+    this.parseXlsx()
+  }
+  
   parseXlsx () {
     this.mates = []
     for (let i in this.sheet) {
