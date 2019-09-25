@@ -18,7 +18,7 @@ module.exports = class Bot {
       console.log('Bot initialized')
     })
 	
-	client.on('message', msg => {
+	this.client.on('message', msg => {
 	  if (msg.content === '!reloadxlsx' && msg.member != null && msg.member.hasPermission('ADMINISTRATOR')) {
 		this.reloadXlsx()
 	  }
