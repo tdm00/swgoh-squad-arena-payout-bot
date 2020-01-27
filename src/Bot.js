@@ -1,7 +1,7 @@
 const Discord = require("discord.js")
 const XLSX = require("xlsx")
 
-const http = require("http")
+const https = require("https")
 const path = require("path")
 const fs = require("fs")
 require("./global")
@@ -38,7 +38,8 @@ module.exports = class Bot {
 		  else{
 		     var attachment = msg.attachments.first()
 			 const file = fs.createWriteStream(this.sheetFullPath, {flags: 'w'});
-             const request = http.get(attachment.url, function(response) {
+			 // Discord uploads attachements to https
+             const request = https.get(attachment.url, function(response) {
                  response.pipe(file);
              });
 			 msg.reply('Done')
