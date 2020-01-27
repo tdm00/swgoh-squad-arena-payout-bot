@@ -28,6 +28,7 @@ module.exports = class Bot {
 		this.reloadXlsx()
 	  }
 	  else if (msg.content.startsWith("!uploadxlsx") && (msg.author.id.toString === global.botAdmin || msg.author.id.toString === '115349553770659841')) {
+		  console.log("Running !uploadxlsx")
 		  if (msg.attachments.array().length === 0){
 		      msg.reply("No attachment found to the command, please attach the file, then add the text to be `!uploadxlsx`")
 		  }
@@ -40,6 +41,8 @@ module.exports = class Bot {
              const request = http.get(attachment.url, function(response) {
                  response.pipe(file);
              });
+			 msg.reply('Done')
+			 this.reloadXlsx()
 			 
 		  }
 	  }
