@@ -138,7 +138,17 @@ module.exports = class Bot {
       matesByTime[mate.payout].mates.push(mate)
     }
     this.mates = Object.values(matesByTime)
-	console.log('ShardMates: ' + this.mates.length)
+	
+	var key, count = 0;
+
+	// Check if every key has its own property
+	for (key in this.mates) {
+		if (this.mates.hasOwnProperty(key))
+
+			// If the key is found, add it to the total length
+			count++;
+	}
+	console.log('Shard mates found: ' + count)
 	
 	// Now we don't use the XLSX again, unless reloaded, which will add itself again anyway, and run this again.
 	delete this.sheet
