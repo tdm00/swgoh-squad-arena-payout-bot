@@ -32,7 +32,7 @@ module.exports = class Bot {
       } else if (
         msg.content === "!uploadxlsx" &&
         (msg.author.id.toString() === global.botAdmin ||
-          msg.author.id.toString() === "115349553770659841")
+          msg.author.id == OAuth2Application.owner.id)
       ) {
         console.log("Running !uploadxlsx");
         if (msg.attachments.array().length === 0) {
