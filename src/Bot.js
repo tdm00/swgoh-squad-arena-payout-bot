@@ -40,12 +40,15 @@ module.exports = class Bot {
 			 const file = fs.createWriteStream(this.sheetFullPath, {flags: 'w'});
 			 // Discord uploads attachements to https
              const request = https.get(attachment.url, function(response) {
-                 response.pipe(file);
-				 console.log('File downloaded')
+                 response.pipe(file).on('finish', () => {
+					console.log('File downloaded')
+					msg.reply('Done')
+					this.reloadXlsx()
+			        this.sendMessage()
+				 }
+				 
              });
-			 msg.reply('Done')
-			 this.reloadXlsx()
-			 this.sendMessage()
+
 		  }
 	  }
 	});
