@@ -18,15 +18,20 @@ module.exports = class Bot {
       console.log('Bot initialized')
     })
 	
+	console.log('Registering xlxs reload command')
 	this.client.on('message', msg => {
 	  if (msg.content === '!reloadxlsx' && msg.member != null && msg.member.hasPermission('ADMINISTRATOR')) {
 		this.reloadXlsx()
 	  }
 	});
 
+    console.log('Bot logging into discord')
     this.client.login(botToken)
+	console.log('Done')
 	
+	console.log('Loading xlxs')
     this.reloadXlsx()
+	console.log('Done')
 
     this.main()
   }
@@ -35,6 +40,7 @@ module.exports = class Bot {
     try {
       if (this.message) {
         this.calculateSecondsUntilPayout()
+		console.log('Sending payout discord embed')
         await this.sendMessage()
       }
     } catch (err) {
@@ -45,8 +51,10 @@ module.exports = class Bot {
   }
 
   async initializeBot () {
+	  
     const messages = await this.channel.fetchMessages()
-    if (messages.array().length === 0) {
+    console.log('Messages in embed channel: ' + messages.array().length)
+	if (messages.array().length === 0) {
       try {
         this.message = await this.channel.send({embed: new Discord.RichEmbed()})
       } catch (err) {
@@ -64,9 +72,11 @@ module.exports = class Bot {
   
   reloadXlsx() {
 	var fs = require('fs')
+	
 	var files = fs.readdirSync(__dirname);
-
+    console.log('Found ' + files.length + ' files in directory')
 	for(var i in files) {
+		console.log('Searching: ' + files[i])
 	   if(path.extname(files[i]) === ".xlxs") {
 		   console.log("Found and parsing xlxs: '" + files[i] + "'")
 		    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(path.resolve(__dirname, files[i])).Sheets.Sheet1)
