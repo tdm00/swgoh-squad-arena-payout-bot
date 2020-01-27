@@ -23,7 +23,7 @@ module.exports = class Bot {
 	console.log('Registering xlxs reload command')
 	
 	// Bad way to handle commands, however there's only a couple so it is reasonable for now
-	this.client.on('message', msg => {
+	this.client.on('message', async msg => {
 	  if (msg.content === '!reloadxlsx' && msg.member != null && msg.member.hasPermission('ADMINISTRATOR')) {
 		this.reloadXlsx()
 	  }
