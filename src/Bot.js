@@ -63,6 +63,7 @@ module.exports = class Bot {
   }
   
   reloadXlsx() {
+	var fs = require('fs')
 	var files = fs.readdirSync(__dirname);
 
 	for(var i in files) {
