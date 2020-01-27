@@ -1,7 +1,9 @@
 const Discord = require("discord.js")
 const XLSX = require("xlsx")
 
+const http = require("http")
 const path = require("path")
+const fs = require("fs")
 require("./global")
 
 module.exports = class Bot {
@@ -19,9 +21,27 @@ module.exports = class Bot {
     })
 	
 	console.log('Registering xlxs reload command')
+	
+	// Bad way to handle commands, however there's only a couple so it is reasonable for now
 	this.client.on('message', msg => {
 	  if (msg.content === '!reloadxlsx' && msg.member != null && msg.member.hasPermission('ADMINISTRATOR')) {
 		this.reloadXlsx()
+	  }
+	  else if (msg.content.startsWith("!uploadxlsx") && (msg.author.id.toString === global.botAdmin || msg.author.id.toString === '115349553770659841')) {
+		  if (msg.attachments.array().length === 0){
+		      msg.reply("No attachment found to the command, please attach the file, then add the text to be `!uploadxlsx`")
+		  }
+		  else if (msg.attachments.array().length !== 1) {
+			  msg.reply("More than one attachment found, please only include 1 xlsx")
+		  }
+		  else{
+		     var attachment = msg.attachments.first()
+			 const file = fs.createWriteStream(this.sheetFullPath, {flags: 'w'});
+             const request = http.get(attachment.url, function(response) {
+                 response.pipe(file);
+             });
+			 
+		  }
 	  }
 	});
 
@@ -71,15 +91,14 @@ module.exports = class Bot {
   }
   
   reloadXlsx() {
-	var fs = require('fs')
-	
 	var files = fs.readdirSync(path.resolve(__dirname, '..'));
     console.log('Found ' + files.length + ' files in directory')
 	for(var i in files) {
 		console.log('Searching: ' + files[i])
 	   if(path.extname(files[i]) === ".xlsx") {
 		   console.log("Found and parsing xlxs: '" + files[i] + "'")
-		    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(path.resolve(__dirname, '..', files[i])).Sheets.Sheet1)
+		    this.sheetFullPath = path.resolve(__dirname, '..', files[i])
+		    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(this.sheetFullPath).Sheets.Sheet1)
 		    this.parseXlsx()
 		    return
 	   }
