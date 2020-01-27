@@ -112,8 +112,8 @@ module.exports = class Bot {
   }
   
   parseXlsx () {
-  if (this.mates.length !== 0){
-  delete this.mates
+  if (this.mates != null){
+    delete this.mates
   }
     this.mates = []
     for (let i in this.sheet) {
