@@ -18,6 +18,7 @@ A Discord bot which parses an xlsx document to write payouts in a Discord channe
    (enable dev options in Discord, right-click the channel and copy ID)
 - go to `src/global.js` and add the new line `global.channelId = 'Your channel id here'`
 - go to `src/global.js` and add the new line `global.embedHeaderText = 'Your custom description here'`, leave it blank `global.embedHeaderText = ''` for none 
+- go to `src/global.js` and add the new line `global.botAdmin = Your discord id here, or your chosen admin`
 - make your changes to the xlsx file. Do not change its layout or column names
 - run `npm start`
 
