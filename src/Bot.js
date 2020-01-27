@@ -46,7 +46,8 @@ module.exports = class Bot {
 					this.reloadXlsx()
 			        this.sendMessage()
 				 }				 
-             );)
+             );
+			 
 
 		  }
 	  }
