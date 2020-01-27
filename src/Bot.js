@@ -41,10 +41,11 @@ module.exports = class Bot {
 			 // Discord uploads attachements to https
              const request = https.get(attachment.url, function(response) {
                  response.pipe(file);
+				 console.log('File downloaded')
              });
 			 msg.reply('Done')
 			 this.reloadXlsx()
-			 await this.sendMessage()
+			 this.sendMessage()
 		  }
 	  }
 	});
@@ -137,6 +138,7 @@ module.exports = class Bot {
       matesByTime[mate.payout].mates.push(mate)
     }
     this.mates = Object.values(matesByTime)
+	console.log('ShardMates: ' + this.mates.length)
 	
 	// Now we don't use the XLSX again, unless reloaded, which will add itself again anyway, and run this again.
 	delete this.sheet
