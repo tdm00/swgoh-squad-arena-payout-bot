@@ -68,9 +68,10 @@ module.exports = class Bot {
 
 	for(var i in files) {
 	   if(path.extname(files[i]) === ".xlxs") {
+		   console.log("Found and parsing xlxs: '" + files[i] + "'")
 		    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(path.resolve(__dirname, files[i])).Sheets.Sheet1)
 		    this.parseXlsx()
-		    break;
+		    return
 	   }
 	}
 
