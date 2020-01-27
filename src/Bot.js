@@ -63,8 +63,16 @@ module.exports = class Bot {
   }
   
   reloadXlsx() {
-    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(path.resolve(__dirname, '../SWGoH_Shard.xlsx')).Sheets.Sheet1)
-    this.parseXlsx()
+	var files = fs.readdirSync(__dirname);
+
+	for(var i in files) {
+	   if(path.extname(files[i]) === ".xlxs") {
+		    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(path.resolve(__dirname, files[i])).Sheets.Sheet1)
+		    this.parseXlsx()
+		    break;
+	   }
+	}
+
   }
   
   parseXlsx () {
@@ -91,6 +99,9 @@ module.exports = class Bot {
       matesByTime[mate.payout].mates.push(mate)
     }
     this.mates = Object.values(matesByTime)
+	
+	// Now we don't use the XLSX again, unless reloaded, which will add itself again anyway, and run this again.
+	delete this.sheet
   }
 
   calculateSecondsUntilPayout () {
