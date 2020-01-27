@@ -44,7 +44,7 @@ module.exports = class Bot {
              });
 			 msg.reply('Done')
 			 this.reloadXlsx()
-			 
+			 await this.sendMessage()
 		  }
 	  }
 	});
@@ -100,7 +100,7 @@ module.exports = class Bot {
 	for(var i in files) {
 		console.log('Searching: ' + files[i])
 	   if(path.extname(files[i]) === ".xlsx") {
-		   console.log("Found and parsing xlxs: '" + files[i] + "'")
+		   console.log("Found and parsing xlsx: '" + files[i] + "'")
 		    this.sheetFullPath = path.resolve(__dirname, '..', files[i])
 		    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(this.sheetFullPath).Sheets.Sheet1)
 		    this.parseXlsx()
@@ -111,6 +111,9 @@ module.exports = class Bot {
   }
   
   parseXlsx () {
+  if (this.mates.length !== 0){
+  delete this.mates
+  }
     this.mates = []
     for (let i in this.sheet) {
       const user = this.sheet[i]
