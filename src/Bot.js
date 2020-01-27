@@ -73,13 +73,13 @@ module.exports = class Bot {
   reloadXlsx() {
 	var fs = require('fs')
 	
-	var files = fs.readdirSync(__dirname);
+	var files = fs.readdirSync(path.resolve(__dirname, '..'));
     console.log('Found ' + files.length + ' files in directory')
 	for(var i in files) {
 		console.log('Searching: ' + files[i])
 	   if(path.extname(files[i]) === ".xlxs") {
 		   console.log("Found and parsing xlxs: '" + files[i] + "'")
-		    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(path.resolve(__dirname, files[i])).Sheets.Sheet1)
+		    this.sheet = XLSX.utils.sheet_to_json(XLSX.readFile(path.resolve(__dirname, '..', files[i])).Sheets.Sheet1)
 		    this.parseXlsx()
 		    return
 	   }
