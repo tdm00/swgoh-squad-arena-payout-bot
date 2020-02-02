@@ -72,6 +72,9 @@ module.exports = class Bot {
                 resolve();
                 this.reloadXlsx();
                 this.sendMessage();
+                msg.reply(
+                  "Done"
+                );
               })
               .on("error", error => {
                 reject(error);
