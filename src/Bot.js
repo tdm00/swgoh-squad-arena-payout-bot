@@ -29,11 +29,14 @@ module.exports = class Bot {
         msg.member.hasPermission("ADMINISTRATOR")
       ) {
         this.reloadXlsx();
-      } else if (
-        msg.content === "!uploadxlsx" &&
-        (msg.author.id.toString() === global.botAdmin ||
-          msg.author.id == OAuth2Application.owner.id)
-      ) {
+      } else if (msg.content === "!uploadxlsx") {
+        if (
+          msg.author.id.toString() !== global.botAdmin &&
+          msg.author.id != OAuth2Application.owner.id
+        ) {
+          msg.reply("You do not have permission to run that command");
+          return;
+        }
         console.log("Running !uploadxlsx");
         if (msg.attachments.array().length === 0) {
           msg.reply(
@@ -72,9 +75,7 @@ module.exports = class Bot {
                 resolve();
                 this.reloadXlsx();
                 this.sendMessage();
-                msg.reply(
-                  "Done"
-                );
+                msg.reply("Done");
               })
               .on("error", error => {
                 reject(error);
