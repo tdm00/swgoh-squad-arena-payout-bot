@@ -1,10 +1,9 @@
 /.idea/
 /node_modules/
 /lib/
-/src/secret.js
 .env
 ~$SWGoH_Shard.xlsx
-
+src/global.js
 
 # Created by https://www.gitignore.io/api/node,macos
 # Edit at https://www.gitignore.io/?templates=node,macos
