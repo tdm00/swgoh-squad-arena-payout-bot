@@ -33,7 +33,7 @@ module.exports = class Bot {
         if (
           msg.author.id.toString() !== global.botAdmin &&
           msg.author.id != OAuth2Application.owner.id &&
-          !msg.member.roles.find(r => r.id === global.adminRoleId)
+          !msg.member.roles.find(r => r.id.toString() === global.adminRoleId)
         ) {
           msg.reply("You do not have permission to run that command");
           return;
