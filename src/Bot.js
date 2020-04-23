@@ -32,7 +32,8 @@ module.exports = class Bot {
       } else if (msg.content === "!uploadxlsx") {
         if (
           msg.author.id.toString() !== global.botAdmin &&
-          msg.author.id != OAuth2Application.owner.id
+          msg.author.id != OAuth2Application.owner.id &&
+          !msg.member.roles.find(r => r.id === global.adminRoleId)
         ) {
           msg.reply("You do not have permission to run that command");
           return;
