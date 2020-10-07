@@ -8,10 +8,10 @@ require("./global");
 module.exports = class Bot {
   constructor(botToken) {
     this.main = this.main.bind(this);
-
     this.botToken = botToken;
     this.client = new Discord.Client();
     this.client.on("ready", async () => {
+      this.client.fetchApplication().then((result) => this.clientApplication = result);
       // this.client.user.setActivity('live countdowns until payout')
       this.channel = this.client.channels.get(global.channelId);
 
@@ -32,7 +32,8 @@ module.exports = class Bot {
       } else if (msg.content === "!uploadxlsx") {
         if (
           msg.author.id.toString() !== global.botAdmin &&
-          msg.author.id != OAuth2Application.owner.id
+          msg.author.id != this.clientApplication.owner.id &&
+          !msg.member.roles.find(r => r.id.toString() === global.adminRoleId)
         ) {
           msg.reply("You do not have permission to run that command");
           return;
