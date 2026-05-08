@@ -5,7 +5,8 @@
   "main": "./lib",
   "scripts": {
     "compile": "babel src --out-dir lib",
-    "start": "npm run compile && node ./lib/index.js"
+    "start": "npm run compile && node ./lib/index.js",
+    "test": "node --test"
   },
   "repository": {
     "type": "git",

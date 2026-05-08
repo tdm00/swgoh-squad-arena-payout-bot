@@ -4,6 +4,7 @@ const XLSX = require("xlsx");
 const path = require("path");
 const fs = require("fs");
 require("./global");
+const payoutData = require("./payoutData");
 const DEFAULT_XLSX_FILENAME = "SWGoH_Shard.xlsx";
 const REQUIRED_SHEET_COLUMNS = ["Name", "UTC", "ID", "Flag", "SWGOH"];
 
@@ -180,113 +181,16 @@ module.exports = class Bot {
   }
 
   parseXlsx() {
-    if (!Array.isArray(this.sheet)) {
-      console.error("Spreadsheet parse failed: expected an array of rows.");
+    const result = payoutData.parseSheetRows(this.sheet, REQUIRED_SHEET_COLUMNS);
+    result.errors.forEach(error => console.error(error));
+    result.warnings.forEach(warning => console.warn(warning));
+
+    if (result.errors.length > 0) {
       this.mates = [];
       return;
     }
 
-    if (this.sheet.length === 0) {
-      console.error(
-        "Spreadsheet is empty. Expected columns: " +
-          REQUIRED_SHEET_COLUMNS.join(", ")
-      );
-      this.mates = [];
-      return;
-    }
-
-    const discoveredColumns = Object.keys(this.sheet[0] || {});
-    const missingColumns = REQUIRED_SHEET_COLUMNS.filter(
-      columnName => discoveredColumns.indexOf(columnName) === -1
-    );
-    if (missingColumns.length > 0) {
-      console.error(
-        "Spreadsheet is missing required columns: " + missingColumns.join(", ")
-      );
-      console.error(
-        "Found columns: " + (discoveredColumns.join(", ") || "(none)")
-      );
-      this.mates = [];
-      return;
-    }
-
-    if (this.mates != null) {
-      delete this.mates;
-    }
-    this.mates = [];
-    let skippedRows = 0;
-    for (let i in this.sheet) {
-      const user = this.sheet[i];
-      const rowNumber = parseInt(i, 10) + 2; // +1 for header row, +1 for 1-based index
-      const utcValue = String(user.UTC || "");
-      const parsedPayout = parseInt(utcValue.substr(0, 2), 10);
-      const hasAllFields =
-        user.Name != null &&
-        user.ID != null &&
-        user.Flag != null &&
-        user.SWGOH != null &&
-        utcValue.length >= 2;
-
-      if (!hasAllFields) {
-        skippedRows++;
-        console.warn(
-          "Skipping row " +
-            rowNumber +
-            ": required data missing (Name, UTC, ID, Flag, SWGOH)."
-        );
-        continue;
-      }
-
-      if (Number.isNaN(parsedPayout) || parsedPayout < 0 || parsedPayout > 23) {
-        skippedRows++;
-        console.warn(
-          "Skipping row " +
-            rowNumber +
-            ": invalid UTC value '" +
-            user.UTC +
-            "'. Expected hour in 24h format (00-23)."
-        );
-        continue;
-      }
-
-      this.mates.push({
-        name: user.Name,
-        payout: parsedPayout,
-        discordId: user.ID,
-        flag: user.Flag,
-        swgoh: user.SWGOH
-      });
-    }
-
-    if (this.mates.length === 0) {
-      console.error(
-        "No valid rows found in spreadsheet after validation. " +
-          skippedRows +
-          " row(s) were skipped."
-      );
-      return;
-    }
-
-    if (skippedRows > 0) {
-      console.warn(
-        "Spreadsheet parsed with warnings: skipped " +
-          skippedRows +
-          " invalid row(s)."
-      );
-    }
-
-    const matesByTime = {};
-    for (let i in this.mates) {
-      const mate = this.mates[i];
-      if (!matesByTime[mate.payout]) {
-        matesByTime[mate.payout] = {
-          payout: mate.payout,
-          mates: []
-        };
-      }
-      matesByTime[mate.payout].mates.push(mate);
-    }
-    this.mates = Object.values(matesByTime);
+    this.mates = payoutData.groupMatesByPayout(result.mates);
 
     var key,
       count = 0;
@@ -304,27 +208,7 @@ module.exports = class Bot {
   }
 
   calculateSecondsUntilPayout() {
-    const now = new Date();
-    for (let i in this.mates) {
-      const mate = this.mates[i];
-      const p = new Date();
-      p.setUTCHours(mate.payout, 0, 0, 0);
-      if (p < now) p.setDate(p.getDate() + 1);
-      mate.timeUntilPayout = p.getTime() - now.getTime();
-      let dif = new Date(mate.timeUntilPayout);
-      const round = dif.getTime() % 60000;
-      if (round < 30000) {
-        dif.setTime(dif.getTime() - round);
-      } else {
-        dif.setTime(dif.getTime() + 60000 - round);
-      }
-      mate.time = `${String(dif.getUTCHours()).padStart(2, "00")}:${String(
-        dif.getUTCMinutes()
-      ).padStart(2, "00")}`;
-    }
-    this.mates.sort((a, b) => {
-      return a.timeUntilPayout - b.timeUntilPayout;
-    });
+    payoutData.calculateSecondsUntilPayout(this.mates, new Date());
   }
 
   async sendMessage() {
