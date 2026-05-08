@@ -1,104 +1,139 @@
-const Discord = require("discord.js");
+const {
+  Client,
+  EmbedBuilder,
+  Events,
+  GatewayIntentBits,
+  PermissionFlagsBits
+} = require("discord.js");
 const XLSX = require("xlsx");
 
 const path = require("path");
 const fs = require("fs");
-require("./global");
+const { pipeline } = require("stream/promises");
+const { Readable } = require("stream");
+
+try {
+  require("./global");
+} catch (err) {
+  if (err.code !== "MODULE_NOT_FOUND") throw err;
+}
 const payoutData = require("./payoutData");
 const DEFAULT_XLSX_FILENAME = "SWGoH_Shard.xlsx";
 const REQUIRED_SHEET_COLUMNS = ["Name", "UTC", "ID", "Flag", "SWGOH"];
 
 module.exports = class Bot {
-  constructor(botToken) {
+  constructor(botToken, deps = {}) {
     this.main = this.main.bind(this);
 
+    const ClientImpl = deps.Client ?? Client;
+    const autoLogin = deps.autoLogin !== false;
+    const runMainLoop = deps.runMainLoop !== false;
+    const loadSpreadsheetOnStart = deps.loadSpreadsheetOnStart !== false;
+
     this.botToken = botToken;
-    this.client = new Discord.Client();
-    this.client.on("ready", async () => {
-      // this.client.user.setActivity('live countdowns until payout')
-      this.channel = this.client.channels.get(global.channelId);
+    this.client = new ClientImpl({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+      ]
+    });
+
+    if (typeof deps.downloadAttachmentToSheet === "function") {
+      this.downloadAttachmentToSheet = deps.downloadAttachmentToSheet.bind(this);
+    }
+
+    this.client.once(Events.ClientReady, async () => {
+      try {
+        this.channel = await this.client.channels.fetch(global.channelId);
+      } catch (err) {
+        console.error(
+          "Failed to fetch payout channel '" + global.channelId + "': " + err.message
+        );
+        return;
+      }
 
       await this.initializeBot();
       console.log("Bot initialized");
     });
 
-    console.log("Registering xlxs reload command");
+    console.log("Registering xlsx reload command");
 
-    // Bad way to handle commands, however there's only a couple so it is reasonable for now
-    this.client.on("message", async msg => {
+    this.client.on(Events.MessageCreate, async msg => {
+      if (msg.author.bot) return;
+
       if (
         msg.content === "!reloadxlsx" &&
         msg.member != null &&
-        msg.member.hasPermission("ADMINISTRATOR")
+        msg.member.permissions.has(PermissionFlagsBits.Administrator)
       ) {
         this.reloadXlsx();
       } else if (msg.content === "!uploadxlsx") {
-        if (
-          msg.author.id.toString() !== global.botAdmin &&
-          msg.author.id != OAuth2Application.owner.id
-        ) {
+        const adminId = String(global.botAdmin);
+        if (msg.author.id !== adminId) {
           msg.reply("You do not have permission to run that command");
           return;
         }
         console.log("Running !uploadxlsx");
-        if (msg.attachments.array().length === 0) {
+        const attachments = [...msg.attachments.values()];
+        if (attachments.length === 0) {
           msg.reply(
             "No attachment found to the command, please attach the file, then add the text to be `!uploadxlsx`"
           );
-        } else if (msg.attachments.array().length !== 1) {
+        } else if (attachments.length !== 1) {
           msg.reply(
             "More than one attachment found, please only include 1 xlsx"
           );
         } else {
-          var attachment = msg.attachments.first();
-          const file = fs.createWriteStream(this.sheetFullPath, { flags: "w" });
-          const request = require("request");
-
-          await new Promise((resolve, reject) => {
-            let stream = request({
-              uri: attachment.url,
-              headers: {
-                Accept:
-                  "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Accept-Language":
-                  "en-US,en;q=0.9,fr;q=0.8,ro;q=0.7,ru;q=0.6,la;q=0.5,pt;q=0.4,de;q=0.3",
-                "Cache-Control": "max-age=0",
-                Connection: "keep-alive",
-                "Upgrade-Insecure-Requests": "1",
-                "User-Agent":
-                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36"
-              },
-              /* GZIP true for most of the websites now, disable it if you don't need it */
-              gzip: true
-            })
-              .pipe(file)
-              .on("finish", () => {
-                console.log(`The file is finished downloading.`);
-                resolve();
-                this.reloadXlsx();
-                this.sendMessage();
-                msg.reply("Done");
-              })
-              .on("error", error => {
-                reject(error);
-              });
-          }).catch(error => {
-            console.log(`Something happened: ${error}`);
-          });
+          const attachment = attachments[0];
+          try {
+            await this.downloadAttachmentToSheet(attachment.url);
+            console.log("The file is finished downloading.");
+            this.reloadXlsx();
+            await this.sendMessage();
+            msg.reply("Done");
+          } catch (error) {
+            console.error("Upload failed: " + error.message);
+            msg.reply("Download failed: " + error.message);
+          }
         }
       }
     });
 
-    console.log("Bot logging into discord");
-    this.client.login(botToken);
+    if (autoLogin) {
+      console.log("Bot logging into discord");
+      this.client.login(botToken);
+    }
     console.log("Done");
 
-    console.log("Loading xlxs");
-    this.reloadXlsx();
-    console.log("Done");
+    if (loadSpreadsheetOnStart) {
+      console.log("Loading xlsx");
+      this.reloadXlsx();
+      console.log("Done");
+    }
 
-    this.main();
+    if (runMainLoop) {
+      this.main();
+    }
+  }
+
+  async downloadAttachmentToSheet(url) {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; swgoh-payout-bot/1.0; +https://github.com/)"
+      }
+    });
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+    if (!response.body) {
+      throw new Error("Empty response body");
+    }
+    await pipeline(
+      Readable.fromWeb(response.body),
+      fs.createWriteStream(this.sheetFullPath, { flags: "w" })
+    );
   }
 
   async main() {
@@ -116,24 +151,28 @@ module.exports = class Bot {
   }
 
   async initializeBot() {
-    const messages = await this.channel.fetchMessages();
-    console.log("Messages in embed channel: " + messages.array().length);
-    if (messages.array().length === 0) {
+    const fetched = await this.channel.messages.fetch({ limit: 50 });
+    const messages = [...fetched.values()].sort(
+      (a, b) => b.createdTimestamp - a.createdTimestamp
+    );
+    console.log("Messages in embed channel: " + messages.length);
+    if (messages.length === 0) {
       try {
         this.message = await this.channel.send({
-          embed: new Discord.RichEmbed()
+          embeds: [new EmbedBuilder()]
         });
       } catch (err) {
         console.log(err);
       }
     } else {
-      if (messages.first().embeds.length === 0) {
-        await messages.first().delete();
+      const newest = messages[0];
+      if (newest.embeds.length === 0) {
+        await newest.delete();
         this.message = await this.channel.send({
-          embed: new Discord.RichEmbed()
+          embeds: [new EmbedBuilder()]
         });
       } else {
-        this.message = messages.first();
+        this.message = newest;
       }
     }
   }
@@ -195,15 +234,11 @@ module.exports = class Bot {
     var key,
       count = 0;
 
-    // Check if every key has its own property
     for (key in this.mates) {
-      if (this.mates.hasOwnProperty(key))
-        // If the key is found, add it to the total length
-        count++;
+      if (this.mates.hasOwnProperty(key)) count++;
     }
     console.log("Shard mates found: " + count);
 
-    // Now we don't use the XLSX again, unless reloaded, which will add itself again anyway, and run this again.
     delete this.sheet;
   }
 
@@ -222,22 +257,22 @@ module.exports = class Bot {
       return;
     }
 
-    let embed = new Discord.RichEmbed().setColor(0x00ae86);
-    let desc = global.embedHeaderText;
+    let desc = global.embedHeaderText || "";
     desc += "\r\n\r\n**Time until next payout**:";
+    const embed = new EmbedBuilder().setColor(0x00ae86).setDescription(desc);
+
     for (let i in this.mates) {
       let fieldName = String(this.mates[i].time);
       let fieldText = "";
       for (const mate of this.mates[i].mates) {
-        fieldText += `${mate.flag} [${mate.name}](${mate.swgoh})\n`; // Discord automatically trims messages
+        fieldText += `${mate.flag} [${mate.name}](${mate.swgoh})\n`;
       }
-      embed
-        .addField(fieldName, fieldText, true) // true: inline mode
-        .setTimestamp();
+      embed.addFields({ name: fieldName, value: fieldText, inline: true });
     }
-    embed.setDescription(desc);
+    embed.setTimestamp(new Date());
+
     try {
-      await this.message.edit({ embed });
+      await this.message.edit({ embeds: [embed] });
     } catch (error) {
       console.error(
         "Failed to update payout embed message in channel '" +
