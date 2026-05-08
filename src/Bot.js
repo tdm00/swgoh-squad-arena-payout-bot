@@ -4,6 +4,7 @@ const XLSX = require("xlsx");
 const path = require("path");
 const fs = require("fs");
 require("./global");
+const DEFAULT_XLSX_FILENAME = "SWGoH_Shard.xlsx";
 
 module.exports = class Bot {
   constructor(botToken) {
@@ -136,20 +137,30 @@ module.exports = class Bot {
   }
 
   reloadXlsx() {
-    var files = fs.readdirSync(path.resolve(__dirname, ".."));
-    console.log("Found " + files.length + " files in directory");
-    for (var i in files) {
-      console.log("Searching: " + files[i]);
-      if (path.extname(files[i]) === ".xlsx") {
-        console.log("Found and parsing xlsx: '" + files[i] + "'");
-        this.sheetFullPath = path.resolve(__dirname, "..", files[i]);
-        this.sheet = XLSX.utils.sheet_to_json(
-          XLSX.readFile(this.sheetFullPath).Sheets.Sheet1
-        );
-        this.parseXlsx();
-        return;
-      }
+    const rootDir = path.resolve(__dirname, "..");
+    const configuredFileName = global.xlsxFilename || DEFAULT_XLSX_FILENAME;
+    this.sheetFullPath = path.resolve(rootDir, configuredFileName);
+
+    if (!fs.existsSync(this.sheetFullPath)) {
+      console.error(
+        "XLSX not found at path: '" +
+          this.sheetFullPath +
+          "'. Set global.xlsxFilename or add the file."
+      );
+      return;
     }
+
+    console.log("Loading xlsx: '" + configuredFileName + "'");
+    const workbook = XLSX.readFile(this.sheetFullPath);
+    if (!workbook.Sheets || !workbook.Sheets.Sheet1) {
+      console.error(
+        "Could not find worksheet 'Sheet1' in file: '" + configuredFileName + "'"
+      );
+      return;
+    }
+
+    this.sheet = XLSX.utils.sheet_to_json(workbook.Sheets.Sheet1);
+    this.parseXlsx();
   }
 
   parseXlsx() {
