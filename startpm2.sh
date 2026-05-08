@@ -1,2 +1,1 @@
-npm run compile
-pm2 start ./lib --name="swgoh-payout"
+pm2 start ./src/index.js --name="swgoh-payout"
