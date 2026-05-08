@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 require("./global");
 const DEFAULT_XLSX_FILENAME = "SWGoH_Shard.xlsx";
+const REQUIRED_SHEET_COLUMNS = ["Name", "UTC", "ID", "Flag", "SWGOH"];
 
 module.exports = class Bot {
   constructor(botToken) {
@@ -151,33 +152,129 @@ module.exports = class Bot {
     }
 
     console.log("Loading xlsx: '" + configuredFileName + "'");
-    const workbook = XLSX.readFile(this.sheetFullPath);
-    if (!workbook.Sheets || !workbook.Sheets.Sheet1) {
-      console.error(
-        "Could not find worksheet 'Sheet1' in file: '" + configuredFileName + "'"
-      );
-      return;
-    }
+    try {
+      const workbook = XLSX.readFile(this.sheetFullPath);
+      if (!workbook.Sheets || !workbook.Sheets.Sheet1) {
+        console.error(
+          "Could not find worksheet 'Sheet1' in file: '" +
+            configuredFileName +
+            "'"
+        );
+        return;
+      }
 
-    this.sheet = XLSX.utils.sheet_to_json(workbook.Sheets.Sheet1);
-    this.parseXlsx();
+      this.sheet = XLSX.utils.sheet_to_json(workbook.Sheets.Sheet1);
+      console.log(
+        "Loaded " +
+          this.sheet.length +
+          " row(s) from worksheet 'Sheet1' in '" +
+          configuredFileName +
+          "'."
+      );
+      this.parseXlsx();
+    } catch (error) {
+      console.error(
+        "Failed to read xlsx file '" + configuredFileName + "': " + error.message
+      );
+    }
   }
 
   parseXlsx() {
+    if (!Array.isArray(this.sheet)) {
+      console.error("Spreadsheet parse failed: expected an array of rows.");
+      this.mates = [];
+      return;
+    }
+
+    if (this.sheet.length === 0) {
+      console.error(
+        "Spreadsheet is empty. Expected columns: " +
+          REQUIRED_SHEET_COLUMNS.join(", ")
+      );
+      this.mates = [];
+      return;
+    }
+
+    const discoveredColumns = Object.keys(this.sheet[0] || {});
+    const missingColumns = REQUIRED_SHEET_COLUMNS.filter(
+      columnName => discoveredColumns.indexOf(columnName) === -1
+    );
+    if (missingColumns.length > 0) {
+      console.error(
+        "Spreadsheet is missing required columns: " + missingColumns.join(", ")
+      );
+      console.error(
+        "Found columns: " + (discoveredColumns.join(", ") || "(none)")
+      );
+      this.mates = [];
+      return;
+    }
+
     if (this.mates != null) {
       delete this.mates;
     }
     this.mates = [];
+    let skippedRows = 0;
     for (let i in this.sheet) {
       const user = this.sheet[i];
+      const rowNumber = parseInt(i, 10) + 2; // +1 for header row, +1 for 1-based index
+      const utcValue = String(user.UTC || "");
+      const parsedPayout = parseInt(utcValue.substr(0, 2), 10);
+      const hasAllFields =
+        user.Name != null &&
+        user.ID != null &&
+        user.Flag != null &&
+        user.SWGOH != null &&
+        utcValue.length >= 2;
+
+      if (!hasAllFields) {
+        skippedRows++;
+        console.warn(
+          "Skipping row " +
+            rowNumber +
+            ": required data missing (Name, UTC, ID, Flag, SWGOH)."
+        );
+        continue;
+      }
+
+      if (Number.isNaN(parsedPayout) || parsedPayout < 0 || parsedPayout > 23) {
+        skippedRows++;
+        console.warn(
+          "Skipping row " +
+            rowNumber +
+            ": invalid UTC value '" +
+            user.UTC +
+            "'. Expected hour in 24h format (00-23)."
+        );
+        continue;
+      }
+
       this.mates.push({
         name: user.Name,
-        payout: parseInt(user.UTC.substr(0, 2)),
+        payout: parsedPayout,
         discordId: user.ID,
         flag: user.Flag,
         swgoh: user.SWGOH
       });
     }
+
+    if (this.mates.length === 0) {
+      console.error(
+        "No valid rows found in spreadsheet after validation. " +
+          skippedRows +
+          " row(s) were skipped."
+      );
+      return;
+    }
+
+    if (skippedRows > 0) {
+      console.warn(
+        "Spreadsheet parsed with warnings: skipped " +
+          skippedRows +
+          " invalid row(s)."
+      );
+    }
+
     const matesByTime = {};
     for (let i in this.mates) {
       const mate = this.mates[i];
@@ -231,6 +328,16 @@ module.exports = class Bot {
   }
 
   async sendMessage() {
+    if (!this.message) {
+      console.warn("Skipping embed update: payout message is not initialized.");
+      return;
+    }
+
+    if (!Array.isArray(this.mates) || this.mates.length === 0) {
+      console.warn("Skipping embed update: no payout data is available.");
+      return;
+    }
+
     let embed = new Discord.RichEmbed().setColor(0x00ae86);
     let desc = global.embedHeaderText;
     desc += "\r\n\r\n**Time until next payout**:";
@@ -245,6 +352,15 @@ module.exports = class Bot {
         .setTimestamp();
     }
     embed.setDescription(desc);
-    await this.message.edit({ embed });
+    try {
+      await this.message.edit({ embed });
+    } catch (error) {
+      console.error(
+        "Failed to update payout embed message in channel '" +
+          global.channelId +
+          "': " +
+          error.message
+      );
+    }
   }
 };
